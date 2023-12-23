@@ -1,9 +1,8 @@
-local StreamDeck = require "streamdeck"
+local StreamDeck = require "StreamDeck"
+local HidDevice = require "HidDevice"
 local bit = require "bit"
 
---- @class StreamDeckXL: StreamDeck
-local StreamDeckXL = setmetatable({}, StreamDeck)
-StreamDeckXL.__index = StreamDeck
+local StreamDeckXL = StreamDeck:extend()
 
 StreamDeckXL.KEY_COUNT = 32
 StreamDeckXL.KEY_COLUMNS = 8
@@ -11,21 +10,16 @@ StreamDeckXL.KEY_ROWS = 4
 StreamDeckXL.KEY_IMAGE_WIDTH = 96
 StreamDeckXL.KEY_IMAGE_HEIGHT = 96
 
---- @return StreamDeckXL
 function StreamDeckXL:new(device)
-  local o = StreamDeck:new(device)
-  setmetatable(o, self)
-  self.__index = self
-  return o
+  StreamDeckXL.super:new(device)
 end
 
---- @return StreamDeckXL
 function StreamDeckXL.connect_first()
-  local sd = StreamDeck.connect(0x0fd9, 0x006c, nil)
-  assert(sd ~= nil, "Could not find Stream Deck XL")
-  
-  local sdxl = StreamDeckXL:new(sd.device)
-  return sdxl
+  local device = HidDevice.open(0xfd9, 0x006c, nil)
+  if device == nil then
+    return nil
+  end
+  return StreamDeckXL(device)
 end
 
 function StreamDeckXL:_get_state()
@@ -51,9 +45,6 @@ function StreamDeckXL:_reset_key_stream()
   self.device:write(payload)
 end
 
---- comment
---- @param key any Key id
---- @param image string Image data
 function StreamDeckXL:set_key_image(key, image)
   local page_number = 0
   local bytes_remaining = #image

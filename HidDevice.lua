@@ -1,4 +1,5 @@
 local ffi = require 'ffi'
+local Object = require 'classic'
 
 ffi.cdef[[
   int hid_init(void);
@@ -51,23 +52,12 @@ local MAX_STR = 255
 
 C.hid_init()
 
-
---- @class HidDevice
---- @private handle cdata
-local HidDevice = {}
+local HidDevice = Object:extend()
 
 function HidDevice:new(handle)
-  local o = {}
-  setmetatable(o, HidDevice)
-  self.__index = self
-  o.handle = handle
-  return o
+  self.handle = handle
 end
 
---- @param vid number VendorId
---- @param pid number ProductId
---- @param serial? string SerialNumber
---- @return HidDevice?
 function HidDevice.open(vid, pid, serial)
   if serial ~= nil then
     serial = ffi.new("char[?]", #serial, serial)
@@ -76,7 +66,7 @@ function HidDevice.open(vid, pid, serial)
   if handle == nil then
     return nil
   end
-  return HidDevice:new(handle)
+  return HidDevice(handle)
 end
 
 function HidDevice:get_manufacturer()

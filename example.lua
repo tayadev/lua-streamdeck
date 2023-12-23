@@ -1,37 +1,62 @@
-local USB_VID_ELGATO = 0x0fd9
-
-local USB_PID_STREAMDECK_ORIGINAL = 0x0060
-local USB_PID_STREAMDECK_ORIGINAL_V2 = 0x006d
-local USB_PID_STREAMDECK_MINI = 0x0063
-local USB_PID_STREAMDECK_XL = 0x006c
-local USB_PID_STREAMDECK_XL_V2 = 0x008f
-local USB_PID_STREAMDECK_MK2 = 0x0080
-local USB_PID_STREAMDECK_PEDAL = 0x0086
-local USB_PID_STREAMDECK_MINI_MK2 = 0x0090
-local USB_PID_STREAMDECK_PLUS = 0x0084
-
 local StreamDeckXL = require "StreamDeckXL"
+local StreamDeckPlus = require "StreamDeckPlus"
+local StreamDeck     = require "StreamDeck"
+
+local pretty = require "pprint"
 
 local SDXL = StreamDeckXL.connect_first()
+assert(SDXL ~= nil, "Could not connect to StreamDeck XL")
 
-print("FW Version: " .. SDXL:get_firmware_version())
+-- local SDP = StreamDeckPlus.connect_first()
+-- assert(SDP ~= nil, "Could not connect to StreamDeck Plus")
 
-SDXL:reset()
-SDXL:set_brightness(100)
+print("SDXL FW Version: " .. SDXL:get_firmware_version())
+-- print("SDP FW Version: " .. SDP:get_firmware_version())
 
-local imageFile = assert(io.open("check.jpeg", "rb"), "Could not open image file")
-local image = imageFile:read("*a")
-imageFile:close()
+local blackImage = assert(io.open("black.jpeg", "rb"):read("*a"), "Could not open image file")
+local image = assert(io.open("placeholder96.jpeg", "rb"):read("*a"), "Could not open image file")
 
-local clickmap = SDXL:_get_state()
-print("clickmap:", clickmap)
-
-local indexOfPressedKey = 0
-for index, value in ipairs(clickmap) do
-  if value then
-    indexOfPressedKey = index
-    break
-  end
+-- blank all keys
+for i = 0, 31 do
+  SDXL:set_key_image(i, blackImage)
 end
 
-SDXL:set_key_image(indexOfPressedKey-1, image)
+local ffi = require "ffi"
+ffi.cdef "void Sleep(int ms);"
+function sleep(ms)
+  ffi.C.Sleep(ms)
+end
+
+-- sweep check image across keys
+for i = 0, 31 do
+  SDXL:set_key_image(i-1, blackImage)
+  SDXL:set_key_image(i, image)
+  sleep(100)
+end
+SDXL:set_key_image(31, blackImage)
+
+
+-- local clickmap = SDXL:_get_state()
+-- print("clickmap:", clickmap)
+
+-- local indexOfPressedKey = 0
+-- for index, value in ipairs(clickmap) do
+--   if value then
+--     indexOfPressedKey = index
+--     break
+--   end
+-- end
+
+-- SDXL:set_key_image(indexOfPressedKey-1, image)
+
+-- local SDP = StreamDeckPlus.connect_first()
+
+-- assert(SDP ~= nil, "Could not connect to StreamDeck Plus")
+
+-- print("FW Version: " .. SDP:get_firmware_version())
+
+-- SDP:reset()
+-- SDP:set_brightness(100)
+
+-- local state = SDP:_get_state()
+-- pretty(state)
